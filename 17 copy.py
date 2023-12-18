@@ -2,7 +2,6 @@ import bisect
 from enum import Enum
 import sys
 import itertools
-import heapq
 
 class Direction(Enum):
         UP = 'UP'
@@ -15,9 +14,6 @@ class Node:
     down = None
     left = None
     right = None
-
-    visited = False
-    id = itertools.count()
     
     x_pos = 0
     y_pos = 0
@@ -27,7 +23,6 @@ class Node:
         self.heat = heat
         self.x_pos = x_pos
         self.y_pos = y_pos
-        self.id = f"({x_pos}, {y_pos})"
     
     def __str__(self):
         return f"({self.x_pos}, {self.y_pos})"
@@ -35,9 +30,6 @@ class Node:
     def get_pos(self):
         return (self.x_pos, self.y_pos)
     
-    def __hash__(self):
-        return self.id.__hash__()
-        
 
 class Path:
 
@@ -50,7 +42,7 @@ class Path:
             self.path = []
             self.current_direction = None
             self.current_direction_length = 0
-            self.score = 0
+            self.score = node.heat
             self.end = node
             self.visited = {node}
         else:
@@ -75,14 +67,15 @@ class Path:
             return False
         
         self.visited.add(node)
-        
-        self.end = node
         self.score += node.heat
+        
+        if node.cost <= self.score:
+            return False
+        
+        node.cost = self.score
+        self.end = node
         self.current_direction_length += 1
         self.path.append(node)
-        
-        if node.cost > self.score:
-            node.cost = self.score
             
         return True
     
@@ -98,10 +91,10 @@ class Queue:
     _queue = []
     
     def add(self, path: Path):
-        heapq.heappush(self._queue, (path.score, path))
+        bisect.insort(self._queue, (path.score, path))
     
     def pop(self):
-        return heapq.heappop(self._queue)[1]
+        return self._queue.pop(0)[1]
     
     def is_empty(self):
         return len(self._queue) == 0
@@ -171,27 +164,38 @@ class CityMap:
             path = self.queue.pop()
             node = path.end
             
+            # if len(path.path) > 20000:
+            #     continue
+            
+            
             if node == end_node:
-                if not best_path:
+                if not best_path or path.score < best_path.score:
                     best_path = path
-                else:
-                    best_path = min(best_path, path, key=lambda x: x.score)
-                break
+            
+            # if node in path.visited:
+            #     continue
             
             path.visited.add(node)
-                    
-            for dest, dir in [(node.up, Direction.UP), (node.down, Direction.DOWN), (node.left, Direction.LEFT), (node.right, Direction.RIGHT)]:
-                if not dest:
-                    continue
-                if dest in path.visited:
-                    continue
-                if dest.cost <= path.score:
-                    continue
-                
+            
+            if node.up and node.up not in path.visited and node.up.cost > path.score:
                 new_path = Path(path = path)
-                if new_path.add(dest, dir):
+                if new_path.add(node.up, Direction.UP):
                     self.queue.add(new_path)
-                    
+            
+            if node.down and node.down not in path.visited and node.down.cost > path.score:
+                new_path = Path(path = path)
+                if new_path.add(node.down, Direction.DOWN):
+                    self.queue.add(new_path)
+            
+            if node.left and node.left not in path.visited and node.left.cost > path.score:
+                new_path = Path(path = path)
+                if new_path.add(node.left, Direction.LEFT):
+                    self.queue.add(new_path)
+            
+            if node.right and node.right not in path.visited and node.right.cost > path.score:
+                new_path = Path(path = path)
+                if new_path.add(node.right, Direction.RIGHT):
+                    self.queue.add(new_path)
                     
         return best_path
     
@@ -218,5 +222,5 @@ if __name__ == '__main__':
     
     shortest = city_map.find_shortest_path()
     
-    # city_map.print_path(shortest)
+    city_map.print_path(shortest)
     print(f"Total heat: {shortest.count()}")
