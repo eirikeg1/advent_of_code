@@ -24,10 +24,10 @@ class Instruction {
 }
 
 class CustomList<T> {
-    private int size = 100000;
+    private int size = 1000000;
     private int[] list = new int[size];
 
-    int growthFactor = 2;
+    double growthFactor = 1.2;
 
     int start = size / 2;
     int end = start + 1;
@@ -47,14 +47,15 @@ class CustomList<T> {
 
     public void addStart(String element) {
         if (start == 0) {
-            int[] newList = new int[size * growthFactor];
+            int newSize = (int) Math.round(size * growthFactor);
+            int[] newList = new int[newSize];
             for (int i = 0; i < size; i++) {
                 newList[i + size / 2] = list[i];
             }
             list = newList;
-            start = size / 2;
+            start = newSize / 2;
             end = start + size;
-            size *= growthFactor;
+            size = newSize;
         }
 
         list[--start] = convert(element);
@@ -62,14 +63,15 @@ class CustomList<T> {
 
     public void addEnd(String element) {
         if (end == size) {
-            int[] newList = new int[size * growthFactor];
+            int newSize = (int) Math.round(size * growthFactor);
+            int[] newList = new int[newSize];
             for (int i = 0; i < size; i++) {
                 newList[i] = list[i];
             }
             list = newList;
-            start = size / 2;
+            start = newSize / 2;
             end = start + size;
-            size *= growthFactor;
+            size = newSize;
         }
         list[end++] = convert(element);
     }
@@ -166,6 +168,8 @@ class Digger {
                 if (newRows > 0) {
                     for (int i = 0; i < newRows; i++) {
                         map.add(0, new CustomList<>(rowSize));
+                        if (i % 1000 == 0)
+                            System.out.println(" * loop 1: " + i + " / " + newRows + " rows");
                     }
                     yPos += newRows;
                 }
@@ -198,7 +202,6 @@ class Digger {
         int destRow = yPos;
         int destCol = xPos;
 
-        System.out.println("Instruction: " + direction + " " + steps + " steps " + color);
         switch (direction) {
             case RIGHT:
                 destCol += steps;
@@ -334,7 +337,8 @@ class Digger {
                 Direction direction = directions.get(directionHex);
 
                 String color = "";
-                System.out.println("Hex: " + hexadecimal + ", Steps: " + steps + ", Direction: " + direction);
+                // System.out.println("Hex: " + hexadecimal + ", Steps: " + steps + ",
+                // Direction: " + direction);
 
                 instructions.add(new Instruction(direction, steps, color));
             }
